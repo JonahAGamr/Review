@@ -98,48 +98,89 @@
     <!-- JavaScript to handle form submission and display reviews -->
     <script>
       // Get the review form element
-      const form = document.querySelector("form");
+const form = document.querySelector("form");
 
-      // Add event listener to form submission
-      form.addEventListener("submit", (event) => {
-        event.preventDefault(); // Prevent page refresh
+// Load existing reviews from file
+let reviews = [];
+fetch("reviews.json")
+  .then((response) => response.json())
+  .then((data) => {
+    reviews = data;
+    displayReviews();
+  })
+  .catch((error) => console.error(error));
 
-        // Get form data
-        const name = form.elements.name.value;
-        const rating = form.elements.rating.value;
-        const review = form.elements.review.value;
+// Add event listener to form submission
+form.addEventListener("submit", (event) => {
+  event.preventDefault(); // Prevent page refresh
 
-        // Check if user has already submitted a review today
-        const today = new Date().toLocaleDateString();
-        const lastReviewDate = localStorage.getItem("lastReviewDate");
-        if (lastReviewDate === today && name !== "Dev1234") {
-          alert("You have already submitted a review today.");
-          return;
-        }
+  // Get form data
+  const name = form.elements.name.value;
+  const rating = form.elements.rating.value;
+  const review = form.elements.review.value;
 
-        // Set name to user's input if bypass is used
-        const displayName = name === "Dev1234"
-          ? prompt("Enter your name for the review:")
-          : name;
+  // Check if user has already submitted a review today
+  const today = new Date().toLocaleDateString();
+  const lastReviewDate = localStorage.getItem("lastReviewDate");
+  if (lastReviewDate === today && name !== "Dev1234") {
+    alert("You have already submitted a review today.");
+    return;
+  }
 
-        // Create review element
-        const reviewElement = document.createElement("div");
-        reviewElement.classList.add("review");
-        reviewElement.innerHTML = `
-          <h3>${displayName} - ${"★".repeat(rating)}${"☆".repeat(5 - rating)}</h3>
-          <p>${review}</p>
-        `;
+  // Set name to user's input if bypass is used
+  const displayName = name === "Dev1234"
+    ? prompt("Enter your name for the review:")
+    : name;
 
-        // Add review element to reviews display
-        const reviews = document.querySelector("#reviews");
-        reviews.appendChild(reviewElement);
+  // Create review object
+  const reviewObj = {
+    name: displayName,
+    rating: rating,
+    review: review,
+    date: new Date().toISOString()
+  };
 
-        // Store date of review submission in local storage
-        localStorage.setItem("lastReviewDate", today);
+  // Add review object to reviews array
+  reviews.push(reviewObj);
 
-        // Reset form
-        form.reset();
-      });
+  // Save reviews to file
+  const json = JSON.stringify(reviews);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "reviews.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Display reviews
+  displayReviews();
+
+  // Store date of review submission in local storage
+  localStorage.setItem("lastReviewDate", today);
+
+  // Reset form
+  form.reset();
+});
+
+// Function to display reviews
+function displayReviews() {
+  const reviewsElement = document.querySelector("#reviews");
+  reviewsElement.innerHTML = "";
+
+  reviews.forEach((review) => {
+    const reviewElement = document.createElement("div");
+    reviewElement.classList.add("review");
+    reviewElement.innerHTML = `
+      <h3>${review.name} - ${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</h3>
+      <p>${review.review}</p>
+      <small>${new Date(review.date).toLocaleString()}</small>
+    `;
+    reviewsElement.appendChild(reviewElement);
+  });
+}
+
     </script>
   </body>
 </html>
